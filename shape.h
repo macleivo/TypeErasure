@@ -6,35 +6,49 @@
 
 class Circle;
 class Square;
+class Shape;
+
+template<typename T>
+concept AcceptedTypeForShape = not std::is_same_v<std::remove_cvref_t<T>, Shape> && not std::is_pointer_v<T>;
 
 class Shape
 {
 public:
-    template<typename T, typename = std::enable_if_t<not std::is_same_v<std::remove_cvref_t<T>, Shape>>>
+    template<AcceptedTypeForShape T>
     explicit Shape(T&& t) : m_impl(std::make_unique<Model<T>>(std::forward<T>(t)))
     {
     }
 
-    friend void drawShape(const Shape& shape)
+    friend void draw(const Shape& shape)
     {
         shape.m_impl->doDraw();
     }
 
-    template<typename T>
-    friend const T* cast(const Shape* shape)
+    template<typename T, typename = std::enable_if_t<std::is_pointer_v<T>>>
+    friend T cast(const Shape* shape)
     {
-        if (auto* model = dynamic_cast<Model<T>*>(shape->m_impl.get()))
+        using cleanT = std::remove_cvref_t<std::remove_pointer_t<T>>;
+        if (auto* model = dynamic_cast<Model<cleanT>*>(shape->m_impl.get()))
         {
             return &model->m_t;
         }
+        else if (auto* model = dynamic_cast<Model<cleanT&>*>(shape->m_impl.get()))
+        {
+            return &model->m_t;
+        }
+        else if (auto* model = dynamic_cast<Model<const cleanT&>*>(shape->m_impl.get()))
+        {
+            return &model->m_t;
+        }
+        //                static_assert(std::is_same_v<T, cleanT> && false);
         return nullptr;
     }
 
-    template<typename T>
-    friend T* cast(Shape* shape)
+    template<typename T, typename = std::enable_if_t<std::is_pointer_v<T>>>
+    friend T cast(Shape* shape)
     {
-        const Shape* tmp = shape;
-        return const_cast<T*>(cast<T>(tmp));
+        const auto* tmp = shape;
+        return cast<T>(tmp);
     }
 
 private:

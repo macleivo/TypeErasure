@@ -9,13 +9,9 @@ void drawShapes(const std::vector<Shape>& shapes)
 {
     for (const auto& shape : shapes)
     {
-        if (const auto* circle = cast<Circle>(&shape))
+        if (const Circle* circle = cast<const Circle*>(&shape))
         {
             std::cout << "a circle\n";
-        }
-        else if (const auto* square = cast<Square>(&shape))
-        {
-            std::cout << "a square\n";
         }
     }
 }
@@ -23,11 +19,19 @@ void drawShapes(const std::vector<Shape>& shapes)
 int main()
 {
     Circle circle(3.0);
-    Square square(5.0);
+    Circle& circleRef(circle);
+
+    const Circle constCircle(3.0);
+    const Circle& constCircleRef(constCircle);
 
     std::vector<Shape> v;
     v.emplace_back(std::move(circle));
-    v.emplace_back(std::move(square));
+    v.emplace_back(std::move(circleRef));
+
+    v.emplace_back(constCircle);
+    v.emplace_back(constCircleRef);
+
+    v.emplace_back(Circle(3.0));
 
     drawShapes(v);
 
