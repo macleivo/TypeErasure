@@ -1,37 +1,57 @@
 #include <iostream>
+#include <variant>
 #include <vector>
 
 #include "shape.h"
 
-using namespace std;
-
-void drawShapes(const std::vector<Shape>& shapes)
+void drawShapes(std::vector<Shape>& shapes)
 {
     for (const auto& shape : shapes)
     {
         if (const auto* circle = cast<const Circle*>(&shape))
         {
-            std::cout << "a circle\n";
+            std::cout << "castable to a const circle\n";
+        }
+        draw(shape);
+    }
+
+    for (auto& shape : shapes)
+    {
+        if (auto* circle = cast<Circle*>(&shape))
+        {
+            std::cout << "castable to a non-const circle\n";
         }
     }
 }
 
-int main()
+std::vector<Shape> foo()
 {
-    Circle circle(3.0);
-    Circle& circleRef(circle);
-
-    const Circle constCircle(3.0);
-    const Circle& constCircleRef(constCircle);
 
     std::vector<Shape> v;
-    v.emplace_back(std::move(circle));
-    v.emplace_back(std::move(circleRef));
+    {
+        Circle circle(3.0);
+        Circle& circleRef(circle);
 
-    v.emplace_back(constCircle);
-    v.emplace_back(constCircleRef);
+        const Circle constCircle(3.0);
+        Circle const& constCircleRef(constCircle);
 
-    v.emplace_back(Circle(3.0));
+        std::cout << "circle: " << &circle << std::endl;
+        std::cout << "circle ref: " << &circleRef << std::endl;
+        std::cout << "const circle: " << &constCircle << std::endl;
+        std::cout << "const circle ref: " << &constCircleRef << std::endl;
+
+        v.emplace_back(circle);
+        v.emplace_back(circleRef);
+        v.emplace_back(constCircle);
+        v.emplace_back(constCircleRef);
+    }
+    return v;
+}
+
+int main()
+{
+
+    auto v = foo();
 
     drawShapes(v);
 

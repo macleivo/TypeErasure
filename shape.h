@@ -9,49 +9,88 @@ class Square;
 class Shape;
 
 template<typename T>
-concept AcceptedTypeForShape = not std::is_same_v<std::remove_cvref_t<T>, Shape> && not std::is_pointer_v<T>;
+struct remove_cvref
+{
+    using type = std::remove_cv_t<std::remove_reference_t<T>>;
+};
+
+template<typename T>
+using remove_cvref_t = typename remove_cvref<T>::type;
 
 template<typename To, typename From>
 To cast(const From* from)
 {
-    return from->template cast<To>();
+    using cleanT = remove_cvref_t<std::remove_pointer_t<To>>;
+
+    const bool isConst = from->m_impl->m_isConst;
+    const bool isReference = from->m_impl->m_isReference;
+
+    if (isConst && isReference)
+    {
+        if (const auto* model = dynamic_cast<const typename From::template Model<const cleanT&>*>(from->m_impl.get()))
+        {
+            return &model->m_t;
+        }
+        return nullptr;
+    }
+
+    if (isReference)
+    {
+        if (const auto* model = dynamic_cast<const typename From::template Model<cleanT&>*>(from->m_impl.get()))
+        {
+            return &model->m_t;
+        }
+        return nullptr;
+    }
+
+    if (const auto* model = dynamic_cast<const typename From::template Model<cleanT>*>(from->m_impl.get()))
+    {
+        return &model->m_t;
+    }
+
+    return nullptr;
+}
+
+template<typename To, typename From>
+To cast(From* from)
+{
+    using cleanT = remove_cvref_t<std::remove_pointer_t<To>>;
+    const bool isConst = from->m_impl->m_isConst;
+    if (isConst)
+    {
+        return nullptr;
+    }
+
+    const bool isReference = from->m_impl->m_isReference;
+    if (isReference)
+    {
+        if (auto* model = dynamic_cast<typename From::template Model<cleanT&>*>(from->m_impl.get()))
+        {
+            return &model->m_t;
+        }
+        return nullptr;
+    }
+
+    if (auto* model = dynamic_cast<typename From::template Model<cleanT>*>(from->m_impl.get()))
+    {
+        return &model->m_t;
+    }
+    return nullptr;
 }
 
 template<typename T>
-class Castable
+struct TD;
+
+class Shape
 {
     template<typename To, typename From>
     friend To cast(const From* from);
 
-private:
-    template<typename To>
-    To cast() const
-    {
-        auto* derived = static_cast<const T*>(this);
-        using cleanT = std::remove_cvref_t<std::remove_pointer_t<To>>;
-        if (auto* model = dynamic_cast<typename T::template Model<cleanT>*>(derived->m_impl.get()))
-        {
-            return &model->m_t;
-        }
-        if (auto* model = dynamic_cast<typename T::template Model<cleanT&>*>(derived->m_impl.get()))
-        {
-            return &model->m_t;
-        }
-        if (auto* model = dynamic_cast<typename T::template Model<const cleanT&>*>(derived->m_impl.get()))
-        {
-            return &model->m_t;
-        }
-        //                static_assert(std::is_same_v<T, cleanT> && false);
-        return nullptr;
-    }
-};
-
-class Shape : public Castable<Shape>
-{
-    friend class Castable<Shape>;
+    template<typename To, typename From>
+    friend To cast(From* from);
 
 public:
-    template<AcceptedTypeForShape T>
+    template<typename T>
     explicit Shape(T&& t) : m_impl(std::make_unique<Model<T>>(std::forward<T>(t)))
     {
     }
@@ -66,13 +105,26 @@ private:
     {
         virtual ~Concept() = default;
         virtual void doDraw() const = 0;
+
+        Concept(bool isConst, bool isReference, bool isPointer)
+            : m_isConst(isConst), m_isReference(isReference), m_isPointer(isPointer)
+        {
+        }
+
+        // used in casting
+        const bool m_isConst {};
+        const bool m_isReference {};
+        const bool m_isPointer {};
     };
 
     template<typename T>
     struct Model : Concept
     {
-        Model(T&& t) : m_t(std::forward<T>(t))
+        Model(T&& t)
+            : Concept(std::is_const_v<std::remove_reference_t<T>>, std::is_reference_v<T>, std::is_pointer_v<T>),
+              m_t(std::forward<T>(t))
         {
+            std::cout << &m_t << std::endl;
         }
 
         void doDraw() const final
@@ -89,8 +141,35 @@ private:
 class Circle
 {
 public:
+    Circle(const Circle& circ) : m_radius(circ.m_radius)
+    {
+        std::cout << "copy ctor of circle\n";
+    }
+
+    Circle& operator=(const Circle& circ)
+    {
+        m_radius = circ.m_radius;
+        std::cout << "copy assign of circle\n";
+        return *this;
+    }
+
+    Circle(Circle&& circ) : m_radius(circ.m_radius)
+    {
+        std::cout << "move ctor of circle\n";
+    }
+
+    Circle& operator=(Circle&& circ)
+    {
+        m_radius = circ.m_radius;
+        std::cout << "move assign of circle\n";
+        return *this;
+    }
+
+    ~Circle() = default;
+
     explicit Circle(double radius) : m_radius(radius)
     {
+        std::cout << "ctor of circ\n";
     }
 
     double radius() const
