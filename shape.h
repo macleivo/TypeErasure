@@ -32,11 +32,11 @@ public:
         {
             return &model->m_t;
         }
-        else if (auto* model = dynamic_cast<Model<cleanT&>*>(shape->m_impl.get()))
+        if (auto* model = dynamic_cast<Model<cleanT&>*>(shape->m_impl.get()))
         {
             return &model->m_t;
         }
-        else if (auto* model = dynamic_cast<Model<const cleanT&>*>(shape->m_impl.get()))
+        if (auto* model = dynamic_cast<Model<const cleanT&>*>(shape->m_impl.get()))
         {
             return &model->m_t;
         }
