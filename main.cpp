@@ -12,7 +12,6 @@ void drawShapes(std::vector<Shape>& shapes)
         {
             std::cout << "castable to a const circle\n";
         }
-        draw(shape);
     }
 
     for (auto& shape : shapes)
@@ -24,9 +23,8 @@ void drawShapes(std::vector<Shape>& shapes)
     }
 }
 
-std::vector<Shape> foo()
+std::vector<Shape> undefined_behavior()
 {
-
     std::vector<Shape> v;
     {
         Circle circle(3.0);
@@ -34,11 +32,6 @@ std::vector<Shape> foo()
 
         const Circle constCircle(3.0);
         Circle const& constCircleRef(constCircle);
-
-        std::cout << "circle: " << &circle << std::endl;
-        std::cout << "circle ref: " << &circleRef << std::endl;
-        std::cout << "const circle: " << &constCircle << std::endl;
-        std::cout << "const circle ref: " << &constCircleRef << std::endl;
 
         v.emplace_back(circle);
         v.emplace_back(circleRef);
@@ -51,7 +44,21 @@ std::vector<Shape> foo()
 int main()
 {
 
-    auto v = foo();
+#if 0
+    auto v = undefined_behavior();
+#else
+    std::vector<Shape> v;
+    Circle circle(3.0);
+    Circle& circleRef(circle);
+
+    const Circle constCircle(3.0);
+    Circle const& constCircleRef(constCircle);
+
+    v.emplace_back(circle);
+    v.emplace_back(circleRef);
+    v.emplace_back(constCircle);
+    v.emplace_back(constCircleRef);
+#endif
 
     drawShapes(v);
 

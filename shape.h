@@ -124,7 +124,7 @@ private:
             : Concept(std::is_const_v<std::remove_reference_t<T>>, std::is_reference_v<T>, std::is_pointer_v<T>),
               m_t(std::forward<T>(t))
         {
-            std::cout << &m_t << std::endl;
+            //            std::cout << &m_t << std::endl;
         }
 
         void doDraw() const final
@@ -143,33 +143,36 @@ class Circle
 public:
     Circle(const Circle& circ) : m_radius(circ.m_radius)
     {
-        std::cout << "copy ctor of circle\n";
+        //        std::cout << "copy ctor of circle\n";
     }
 
     Circle& operator=(const Circle& circ)
     {
         m_radius = circ.m_radius;
-        std::cout << "copy assign of circle\n";
+        //        std::cout << "copy assign of circle\n";
         return *this;
     }
 
     Circle(Circle&& circ) : m_radius(circ.m_radius)
     {
-        std::cout << "move ctor of circle\n";
+        //        std::cout << "move ctor of circle\n";
     }
 
     Circle& operator=(Circle&& circ)
     {
         m_radius = circ.m_radius;
-        std::cout << "move assign of circle\n";
+        //        std::cout << "move assign of circle\n";
         return *this;
     }
 
-    ~Circle() = default;
+    ~Circle()
+    {
+        //        std::cout << "deleting circle\n";
+    }
 
     explicit Circle(double radius) : m_radius(radius)
     {
-        std::cout << "ctor of circ\n";
+        //        std::cout << "ctor of circ\n";
     }
 
     double radius() const
