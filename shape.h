@@ -11,7 +11,13 @@ class Shape;
 template<typename T>
 concept AcceptedTypeForShape = not std::is_same_v<std::remove_cvref_t<T>, Shape> && not std::is_pointer_v<T>;
 
-class Shape
+struct Castable
+{
+    template<typename To, typename From>
+    friend To cast(const From* from);
+};
+
+class Shape : public Castable
 {
 public:
     template<AcceptedTypeForShape T>
@@ -24,34 +30,7 @@ public:
         shape.m_impl->doDraw();
     }
 
-    template<typename T, typename = std::enable_if_t<std::is_pointer_v<T>>>
-    friend T cast(const Shape* shape)
-    {
-        using cleanT = std::remove_cvref_t<std::remove_pointer_t<T>>;
-        if (auto* model = dynamic_cast<Model<cleanT>*>(shape->m_impl.get()))
-        {
-            return &model->m_t;
-        }
-        if (auto* model = dynamic_cast<Model<cleanT&>*>(shape->m_impl.get()))
-        {
-            return &model->m_t;
-        }
-        if (auto* model = dynamic_cast<Model<const cleanT&>*>(shape->m_impl.get()))
-        {
-            return &model->m_t;
-        }
-        //                static_assert(std::is_same_v<T, cleanT> && false);
-        return nullptr;
-    }
-
-    template<typename T, typename = std::enable_if_t<std::is_pointer_v<T>>>
-    friend T cast(Shape* shape)
-    {
-        const auto* tmp = shape;
-        return cast<T>(tmp);
-    }
-
-private:
+    // private:
     struct Concept
     {
         virtual ~Concept() = default;
@@ -116,4 +95,24 @@ private:
 void draw(const Square& square)
 {
     std::cout << "Square with side " << square.side() << std::endl;
+}
+
+template<typename To, typename From>
+To cast(const From* from)
+{
+    using cleanT = std::remove_cvref_t<std::remove_pointer_t<To>>;
+    if (auto* model = dynamic_cast<typename From::template Model<cleanT>*>(from->m_impl.get()))
+    {
+        return &model->m_t;
+    }
+    if (auto* model = dynamic_cast<typename From::template Model<cleanT&>*>(from->m_impl.get()))
+    {
+        return &model->m_t;
+    }
+    if (auto* model = dynamic_cast<typename From::template Model<const cleanT&>*>(from->m_impl.get()))
+    {
+        return &model->m_t;
+    }
+    //                static_assert(std::is_same_v<T, cleanT> && false);
+    return nullptr;
 }

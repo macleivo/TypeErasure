@@ -9,7 +9,7 @@ void drawShapes(const std::vector<Shape>& shapes)
 {
     for (const auto& shape : shapes)
     {
-        if (const Circle* circle = cast<const Circle*>(&shape))
+        if (const auto* circle = cast<const Circle*>(&shape))
         {
             std::cout << "a circle\n";
         }
